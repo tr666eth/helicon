@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/examples/ui.css" />
+    <script src="/examples/ui.js"></script>
+    <script src="/dist/bundle.js"></script>
+    <script id="example">
+      const { AudioGraph, build } = helicon;
+      window.ag = new AudioGraph(
+        build((node, edge) => {
+          node('OSC', 'OscillatorNode', { frequency: 440 });
+          node('LFO', 'OscillatorNode', { frequency: 1 });
+          node('LFO_AMT', 'GainNode', { gain: 200 });
+          node('DEST', 'AudioDestinationNode', {});
+          edge('LFO', 0, 'LFO_AMT', 0);
+          edge('LFO_AMT', 0, 'OSC', 'detune');
+          edge('OSC', 0, 'DEST', 0);
+        }),
+      );
+    </script>
+  </head>
+  <body>
+    <script>
+      el('button', '⏯️', () => (ag.playing ? ag.pause() : ag.play()));
+      el('button', '⏹', () => ag.stop());
+      el('pre', example.innerText);
+    </script>
+  </body>
+</html>

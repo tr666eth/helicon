@@ -1,0 +1,9 @@
+pre {
+  border: solid 1px palegreen;
+  padding: 1em;
+}
+button {
+  border: none;
+  padding: none;
+  background: palegreen;
+}

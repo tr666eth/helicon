@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/examples/ui.css" />
+    <script src="/dist/bundle.js"></script>
+    <script src="/examples/ui.js"></script>
+    <script id="processor" type="text/template">
+      registerProcessor(
+        'WhiteNoiseProcessor',
+        class WhiteNoiseProcessor extends AudioWorkletProcessor {
+          process(_inputs, [[output]]) {
+            for (let i = 0; i < 128; i++) {
+              output[i] = Math.random() * 2 - 1;
+            }
+            return true;
+          }
+        },
+      );
+    </script>
+    <script id="example">
+      const { AudioGraph, build } = audiograph;
+
+      const extensions = [
+        {
+          type: 'WhiteNoiseNode',
+          description: {
+            numberOfInputs: 0,
+            numberOfOutputs: 1,
+            params: {},
+          },
+          node: class WhiteNoiseNode extends AudioWorkletNode {
+            constructor(context) {
+              super(context, 'WhiteNoiseProcessor', {
+                numberOfInputs: 0,
+                numberOfOutputs: 1,
+                outputChannelCount: [1],
+                channelCount: 1,
+                channelCountMode: 'explicit',
+                channelInterpretation: 'discrete',
+              });
+            }
+          },
+          processor: URL.createObjectURL(
+            new Blob([processor.innerText], { type: 'application/javascript' }),
+          ),
+        },
+      ];
+
+      window.ag = new AudioGraph(
+        build((node, edge) => {
+          node('NOISE', 'WhiteNoiseNode', {});
+          node('DEST', 'AudioDestinationNode', {});
+          edge('NOISE', 0, 'DEST', 0);
+        }, extensions),
+        extensions,
+      );
+    </script>
+  </head>
+  <body>
+    <script>
+      el('button', '⏯️', () => (ag.playing ? ag.pause() : ag.play()));
+      el('button', '⏹', () => ag.stop());
+      el('pre', example.innerText);
+      el('pre', processor.innerText);
+    </script>
+  </body>
+</html>
