@@ -4,7 +4,7 @@ Helicon is a library for making generative music with web audio. It was develope
 
 It aims to use native web audio APIs as directly as possible and to be general purpose - avoiding including any specific audio processing or sequencing code in favor of things that apply to any project and any style of music.
 
-## Goals:
+## Goals
 
 - **Provide a nicer API for creating and updating web audio graphs**
 
@@ -18,7 +18,7 @@ It aims to use native web audio APIs as directly as possible and to be general p
 
   Helicon handles a few of the more involved parts of using web audio transparently so that you don't have to re-implement them in every project. These include loading files, loading worklet processors, and starting and stopping playback without clicks.
 
-## Roadmap:
+## Roadmap
 
 - **Remove main thread components of custom nodes**
 
@@ -98,9 +98,17 @@ The `node` builder function takes an id, node type, and params object.
 
 The `edge` builder function takes a node id, output index, target node id, and a target input index or param name.
 
-## Running examples
+## Running Examples
 
-Clone the repo, `yarn install`, and then `yarn run serve-examples`
+In order to play the examples, simply run
+```
+git clone https://github.com/tr666eth/helicon.git
+cd helicon
+yarn install
+yarn run build
+yarn run serve-examples
+```
+and navigate to [localhost:8081](http://127.0.0.1:8081).
 
 ## Discord
 
