@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <button id="play">⏯️</button>
+    <button id="stop">⏹</button>
+
+    <script src="https://unpkg.com/helicon@0.1.0/dist/index.js"></script>
+    <script>
+      const { AudioGraph, build } = helicon;
+
+      // create graph playing a 220hz tone through a lowpass filter
+      const ag = new AudioGraph(
+        build((node, edge) => {
+          node('OSC', 'OscillatorNode', { type: 'sawtooth', frequency: 220 });
+          node('FILT', 'BiquadFilterNode', {
+            frequency: 440,
+            Q: 4,
+          });
+          node('DEST', 'AudioDestinationNode');
+
+          edge('OSC', 0, 'FILT', 0);
+          edge('FILT', 0, 'DEST', 0);
+        }),
+      );
+
+      // Make buttons control playback.  Helicon's audio graph exposes
+      // click-free play, pause and stop methods that the web audio api does not
+      // provide natively.
+      document
+        .getElementById('play')
+        .addEventListener('click', () => (ag.playing ? ag.pause() : ag.play()));
+      document
+        .getElementById('stop')
+        .addEventListener('click', () => ag.stop());
+    </script>
+  </body>
+</html>

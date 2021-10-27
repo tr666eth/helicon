@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <script src="https://unpkg.com/helicon@0.1.0/dist/index.js"></script>
+    <script>
+      const { AudioGraph, build } = helicon;
+
+      // We will start by creating a graph with an oscillator playing through a
+      // lowpass filter.
+      const ag = new AudioGraph(
+        // We use `build` from helicon to easily create the data only virtual
+        // graph. We will create oscillator, filter, and destination nodes.  We
+        // will connect the output of the oscillator node to the filter and the
+        // output of the filter to our destination node.
+        build((node, edge) => {
+          // We need to create the nodes first. The first argument for the first
+          // node here, 'OSC', is an id which we will use later to reference the
+          // node when defining edges.  It needs to be unique. The second
+          // argument, 'OscillatorNode', is the type of the node we are
+          // creating, and the third is an object specifying parameters for
+          // the node. The third argument can be skipped if the node has no
+          // parameters or if we are happy with the defaults.
+          node('OSC', 'OscillatorNode', { type: 'sawtooth', frequency: 220 });
+          node('FILT', 'BiquadFilterNode', {
+            type: 'lowpass',
+            frequency: 440,
+            Q: 4,
+          });
+          node('DEST', 'AudioDestinationNode');
+
+          // After creating nodes, we can create edges to connect them.  The
+          // first argument to edge is the id of the output node, and the
+          // second is the index of its output.  We start counting these indices
+          // from zero, so this is referencing the first and only output of our
+          // OscillatorNode.  The third and fourth are the id and input index
+          // for the input node.  If we were connecting an output to a parameter
+          // instead of an input, we would pass the paramter name as the fourth
+          // argument in place of the input index.
+          edge('OSC', 0, 'FILT', 0);
+          edge('FILT', 0, 'DEST', 0);
+        }),
+      );
+    </script>
+  </body>
+</html>
