@@ -7,7 +7,6 @@ export interface AudioNodeSubclass {
 
 export type NodeExtension = {
   type: string;
-  node: AudioNodeSubclass;
   description: NodeDescription;
-  processor?: string;
+  processor: string;
 };

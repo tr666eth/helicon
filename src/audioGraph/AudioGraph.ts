@@ -10,6 +10,7 @@ import {
 import { getAudioParamNames } from '../utils';
 import { nativeNodeConstructors } from './nativeNodeConstructors';
 import { nativeNodeDescriptions } from './nativeNodeDescriptions';
+import { createNode } from './createNode';
 
 const emptyGraph = {
   seed: 0,
@@ -110,12 +111,12 @@ export class AudioGraph {
     ).then(() => {});
   }
 
-  private _extend({ type, node, description, processor }: NodeExtension) {
+  private _extend({ type, description, processor }: NodeExtension) {
     if (this.constructors[type] && process.env.NODE_ENV === 'development')
       throw new Error(
         `Cannot extend project with '${type}' because it already exists`,
       );
-    this.constructors[type] = node;
+    this.constructors[type] = createNode(type, description);
     this.descriptions[type] = description;
     if (processor) this.workletProcessorURIs.push(processor);
   }

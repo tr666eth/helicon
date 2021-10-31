@@ -31,4 +31,8 @@ export type NodeDescription = {
   numberOfInputs: number;
   numberOfOutputs: number;
   params: { [param: string]: ParamDescription };
+  outputChannelCount?: number[],
+  channelCount?: 1,
+  channelCountMode?: 'max' | 'clamped-max' | 'explicit',
+  channelInterpretation?: 'speakers' | 'discrete',
 };
