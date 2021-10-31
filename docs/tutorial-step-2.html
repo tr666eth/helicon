@@ -4,13 +4,140 @@
     <button id="play">⏯️</button>
     <button id="stop">⏹</button>
 
-    <script src="https://unpkg.com/helicon@0.1.0/dist/index.js"></script>
-    <script>
-      const { AudioGraph, build } = helicon;
+    <script src="https://unpkg.com/helicon@0.2.0/dist/index.js"></script>
+    <script id="sequenceProcessor" type="text/template">
+      // Here we define a processor node for our sequence. `registerProcessor`
+      // is a global function in the audio worklet scope.  We give it a name and
+      // pass a subclass of AudioWorkletProcessor.  We can use the name we pass
+      // here to identify the processor when constructing AudioWorkletNodes on
+      // the main thread.
+      registerProcessor(
+        'SequenceNodeProcessor',
+        class SequenceNodeProcessor extends AudioWorkletProcessor {
+          // This tells the audio API which parameters to make available on
+          // worklet nodes using this processor.  Here we create one parameter,
+          // clock, which will trigger our processor to step forward in the
+          // sequence.
+          static get parameterDescriptors() {
+            return [
+              {
+                name: 'clock',
+                defaultValue: 0,
+                // When creating audio parameters, there are two possible values
+                // for automationRate.  The first, `a-rate` means the sample
+                // rate of the parameter input will match the sample rate of
+                // audio output. The second, `k-rate`, means that we will have
+                // a single value of the parameter per buffer.  A typical sample
+                // rate is 48000hz, buffer size is 128, and we need two samples
+                // per cycle, so using k-rate lets us clock this up to 187hz.
+                automationRate: 'k-rate',
+              },
+            ];
+          }
 
-      // create graph playing a 220hz tone through a lowpass filter
+          // the sequence processor needs to keep track of its position and the
+          // previous value of clock between processing frames.
+          lastClock = 0;
+          position = 0;
+
+          constructor(options) {
+            super(options);
+            // the constructor of the AudioWorkletNode using this processor will
+            // pass the initial value of the sequence from the main thread.
+            this.sequence = options.processorOptions.sequence;
+
+            // after the processor is constructed, communication between the
+            // main and audio threads is only possible through message passing -
+            // so here we use messages to update the sequence.
+            this.port.onmessage = ({ data }) => {
+              this.sequence = data;
+              // when the sequence is udpated, we make sure the current position
+              // is not larger than the length of the sequence.
+              this.position =
+                data.length === 0 ? 0 : this.position % data.length;
+            };
+          }
+
+          // The most important part of the processor is its process method,
+          // which recieves buffers for its inputs and parameters and fills
+          // buffers for its output.
+          process(
+            // inputs and outputs here are arrays of inputs, each of which is
+            // an array of channels, with each channel being a Float32Array
+            // filled with values representing individual samples.  Here we
+            // destructure the single channel of the first and only output.
+            inputs,
+            [[output]],
+            // Parameters are passed as an object, with parameter names as keys
+            // and Float32Arrays as values.  For k-rate parameters like clock,
+            // the array only has a single element.  Here we destructure the
+            // single value of the k-rate clock param.
+            { clock: [clock] },
+          ) {
+            // if the value of the clock param rises across zero, we increment
+            // our position in the sequence
+            if (this.lastClock < 0 && clock >= 0) {
+              this.position = (this.position + 1) % this.sequence.length;
+            }
+            this.lastClock = clock;
+
+            // we fill the output with the value from the sequence at the
+            // current position
+            output.fill(this.sequence[this.position]);
+
+            // returning true from process tells the web audio API to keep the
+            // node alive
+            return true;
+          }
+        },
+      );
+    </script>
+    <script>
+      const { AudioGraph, ParamType, build } = helicon;
+
+      // create extension referencing our processor
+      const extensions = [
+        {
+          // `type` here names the new node we are adding - we will use this in
+          // `build` below
+          type: 'SequenceNode',
+          // this description is used internally by helicon to construct nodes.
+          // params here describes both their true audio parameters (like clock
+          // here) and any other values that can be passed from the virtual
+          // graph to the worklet processor (like sequence in this example)
+          description: {
+            numberOfInputs: 0,
+            numberOfOutputs: 1,
+            params: {
+              clock: { type: ParamType.AudioParam, default: 0 },
+              sequence: {
+                type: ParamType.Value,
+                default: [],
+              },
+            },
+          },
+          // Processor would typically be the url to a seperate script file.
+          // Because we defined the processor inline here, we read its text and
+          // create a data url.
+          processor: `data:application/javascript;base64,${btoa(
+            document.getElementById('sequenceProcessor').text,
+          )}`,
+        },
+      ];
+
+      // create graph playing a major 7th arpeggio
       const ag = new AudioGraph(
         build((node, edge) => {
+          node('CLOCK', 'OscillatorNode', { type: 'square', frequency: 4 });
+          node('SEQ', 'SequenceNode', {
+            // The values here are in cents, or 100ths of semitone.  We will
+            // connect the output of our sequence to the detune parameter of our
+            // oscillator node.  Oscillators, filters, and other nodes working
+            // with pitch typically have both frequency and detune parameters.
+            // Frequency is linear in hz, while detune is exponential in cents
+            // and is more useful for sequencing melodies.
+            sequence: [0, 400, 700, 1100, 1200, 1100, 700, 400],
+          });
           node('OSC', 'OscillatorNode', { type: 'sawtooth', frequency: 220 });
           node('FILT', 'BiquadFilterNode', {
             frequency: 440,
@@ -18,14 +145,15 @@
           });
           node('DEST', 'AudioDestinationNode');
 
+          edge('CLOCK', 0, 'SEQ', 'clock');
+          edge('SEQ', 0, 'OSC', 'detune');
           edge('OSC', 0, 'FILT', 0);
           edge('FILT', 0, 'DEST', 0);
-        }),
+        }, extensions),
+        extensions,
       );
 
-      // Make buttons control playback.  Helicon's audio graph exposes
-      // click-free play, pause and stop methods that the web audio api does not
-      // provide natively.
+      // make buttons control playback
       document
         .getElementById('play')
         .addEventListener('click', () => (ag.playing ? ag.pause() : ag.play()));

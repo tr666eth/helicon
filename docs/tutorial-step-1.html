@@ -1,25 +1,30 @@
 <!DOCTYPE html>
 <html>
   <body>
-    <script src="https://unpkg.com/helicon@0.1.0/dist/index.js"></script>
+    <button id="play">⏯️</button>
+    <button id="stop">⏹</button>
+
+    <script src="https://unpkg.com/helicon@0.2.0/dist/index.js"></script>
     <script>
       const { AudioGraph, build } = helicon;
 
       // We will start by creating a graph with an oscillator playing through a
-      // lowpass filter.
+      // lowpass filter.  Helicon's `AudioGraph` class accepts a serializable
+      // data only virtual graph, loads any required audio files or worklet
+      // processors for custom nodes, and creates and plays the native graph.
       const ag = new AudioGraph(
         // We use `build` from helicon to easily create the data only virtual
-        // graph. We will create oscillator, filter, and destination nodes.  We
-        // will connect the output of the oscillator node to the filter and the
-        // output of the filter to our destination node.
+        // graph. We will create oscillator, filter, and destination nodes,
+        // connecting the output of the oscillator node to the filter and the
+        // output of the filter to the destination node.
         build((node, edge) => {
           // We need to create the nodes first. The first argument for the first
           // node here, 'OSC', is an id which we will use later to reference the
           // node when defining edges.  It needs to be unique. The second
           // argument, 'OscillatorNode', is the type of the node we are
-          // creating, and the third is an object specifying parameters for
-          // the node. The third argument can be skipped if the node has no
-          // parameters or if we are happy with the defaults.
+          // creating, and the third is an object specifying values for the
+          // node's parameters.  The third argument can be skipped if the node
+          // has no parameters or if we are happy with default values.
           node('OSC', 'OscillatorNode', { type: 'sawtooth', frequency: 220 });
           node('FILT', 'BiquadFilterNode', {
             type: 'lowpass',
@@ -29,9 +34,9 @@
           node('DEST', 'AudioDestinationNode');
 
           // After creating nodes, we can create edges to connect them.  The
-          // first argument to edge is the id of the output node, and the
-          // second is the index of its output.  We start counting these indices
-          // from zero, so this is referencing the first and only output of our
+          // first argument to edge is the id of the output node, and the second
+          // is the index of its output.  We start counting these indices from
+          // zero, so this is referencing the first and only output of our
           // OscillatorNode.  The third and fourth are the id and input index
           // for the input node.  If we were connecting an output to a parameter
           // instead of an input, we would pass the paramter name as the fourth
@@ -40,6 +45,17 @@
           edge('FILT', 0, 'DEST', 0);
         }),
       );
+
+      // The browser requires a user interaction to start audio playback, so to
+      // hear the graph we constructed, we need to add play/pause/stop buttons.
+      // Helicon's audio graph exposes click-free play, pause and stop methods
+      // that the web audio api does not provide natively.
+      document
+        .getElementById('play')
+        .addEventListener('click', () => (ag.playing ? ag.pause() : ag.play()));
+      document
+        .getElementById('stop')
+        .addEventListener('click', () => ag.stop());
     </script>
   </body>
 </html>
