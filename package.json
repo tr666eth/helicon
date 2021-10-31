@@ -1,6 +1,6 @@
 {
   "name": "helicon",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "a library for making music with web audio",
   "author": "tr666",
   "license": "CC0-1.0",
@@ -14,16 +14,14 @@
     "test": "jest",
     "lint": "prettier -c .",
     "clean": "find dist -not -name .gitignore -maxdepth 1 -mindepth 1 | xargs rm -rf",
-    "build": "webpack",
-    "serve-examples": "http-server"
+    "build": "webpack"
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/jest": "^27.0.1",
-    "http-server": "^13.0.1",
-    "jest": "^27.1.0",
-    "prettier": "^2.4.0",
-    "ts-jest": "^27.0.5",
+    "@types/jest": "^27.0.2",
+    "jest": "^27.3.1",
+    "prettier": "^2.4.1",
+    "ts-jest": "^27.0.7",
     "ts-loader": "^9.2.5",
     "typescript": "^4.4.3",
     "webpack": "^5.52.0",
